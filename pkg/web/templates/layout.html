@@ -1,0 +1,179 @@
+{{ define "layout" }}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decypharr - {{.Title}}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link href="{{.URLBase}}assets/css/styles.css" rel="stylesheet" type="text/css" />
+
+    <link rel="apple-touch-icon" sizes="180x180" href="{{.URLBase}}images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{.URLBase}}images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{.URLBase}}images/favicon/favicon-16x16.png">
+    <link rel="manifest" href="{{.URLBase}}images/favicon/site.webmanifest">
+
+    <link rel="preload" href="{{.URLBase}}assets/js/common.js" as="script">
+
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+        window.urlBase = "{{.URLBase}}";
+    </script>
+</head>
+<body class="min-h-screen bg-base-200 flex flex-col font-sans text-base-content antialiased">
+<div class="toast-container fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<header class="navbar bg-base-100/80 shadow-sm border-b border-base-300/50 sticky top-0 z-40 backdrop-blur-md transition-all">
+    <div class="navbar-start">
+        <div class="dropdown">
+            <div tabindex="0" role="button" class="btn btn-ghost lg:hidden rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
+                </svg>
+            </div>
+            <ul class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl bg-base-100/95 backdrop-blur-xl rounded-box w-52 border border-base-300/50">
+                <li><a href="{{.URLBase}}" class="{{if eq .Page "index"}}active bg-primary/10 text-primary font-medium{{end}}">
+                    <i class="bi bi-grid-3x3-gap"></i>Dashboard
+                </a></li>
+                <li><a href="{{.URLBase}}download" class="{{if eq .Page "download"}}active bg-primary/10 text-primary font-medium{{end}}">
+                    <i class="bi bi-cloud-download"></i>Download
+                </a></li>
+                <li><a href="{{.URLBase}}repair" class="{{if eq .Page "repair"}}active bg-primary/10 text-primary font-medium{{end}}">
+                    <i class="bi bi-wrench-adjustable"></i>Repair
+                </a></li>
+                <li><a href="{{.URLBase}}settings" class="{{if eq .Page "config"}}active bg-primary/10 text-primary font-medium{{end}}">
+                    <i class="bi bi-gear"></i>Settings
+                </a></li>
+                <div class="divider my-1"></div>
+                <li><a href="{{.URLBase}}webdav" target="_blank">
+                    <i class="bi bi-cloud text-success"></i>WebDAV
+                </a></li>
+                <li><a href="{{.URLBase}}logs" target="_blank">
+                    <i class="bi bi-journal-text text-warning"></i>Logs
+                </a></li>
+            </ul>
+        </div>
+        <a class="btn btn-ghost text-xl font-bold hover:bg-transparent group" href="{{.URLBase}}">
+            <img src="{{.URLBase}}images/logo.svg" alt="Decypharr Logo" class="w-8 h-8 inline-block mr-2 transition-transform group-hover:scale-110">
+            <span class="hidden sm:inline brand-text font-black tracking-tight">Decypharr</span>
+        </a>
+    </div>
+
+    <div class="navbar-center hidden lg:flex">
+        <ul class="menu menu-horizontal px-1 gap-2">
+            <li><a href="{{.URLBase}}" class="rounded-lg transition-colors {{if eq .Page "index"}}bg-primary/10 text-primary font-semibold{{else}}hover:bg-base-200{{end}}">
+                <i class="bi bi-grid-3x3-gap"></i>
+                <span>Dashboard</span>
+            </a></li>
+            <li><a href="{{.URLBase}}download" class="rounded-lg transition-colors {{if eq .Page "download"}}bg-primary/10 text-primary font-semibold{{else}}hover:bg-base-200{{end}}">
+                <i class="bi bi-cloud-download"></i>
+                <span>Download</span>
+            </a></li>
+            <li><a href="{{.URLBase}}repair" class="rounded-lg transition-colors {{if eq .Page "repair"}}bg-primary/10 text-primary font-semibold{{else}}hover:bg-base-200{{end}}">
+                <i class="bi bi-wrench-adjustable"></i>
+                <span>Repair</span>
+            </a></li>
+            <li><a href="{{.URLBase}}settings" class="rounded-lg transition-colors {{if eq .Page "config"}}bg-primary/10 text-primary font-semibold{{else}}hover:bg-base-200{{end}}">
+                <i class="bi bi-gear"></i>
+                <span>Settings</span>
+            </a></li>
+        </ul>
+    </div>
+
+    <div class="navbar-end gap-2">
+        <div class="hidden xl:flex items-center gap-2 mr-2">
+            <a href="{{.URLBase}}webdav" target="_blank" class="btn btn-ghost btn-sm btn-circle text-success tooltip tooltip-bottom" data-tip="WebDAV">
+                <i class="bi bi-cloud text-lg"></i>
+            </a>
+            <a href="{{.URLBase}}debug/logs" target="_blank" class="btn btn-ghost btn-sm btn-circle text-info tooltip tooltip-bottom" data-tip="Logs">
+                <i class="bi bi-journal-text text-lg"></i>
+            </a>
+        </div>
+        
+        <label class="swap swap-rotate btn btn-ghost btn-sm btn-circle hover:bg-base-200">
+            <input type="checkbox" id="themeToggle" class="theme-controller" />
+            <i class="swap-off bi bi-sun text-lg text-warning"></i>
+            <i class="swap-on bi bi-moon-stars text-lg text-info"></i>
+        </label>
+
+        <a href="{{.URLBase}}stats" class="btn btn-ghost btn-sm rounded-lg hover:bg-base-200">
+            <i class="bi bi-graph-up text-lg"></i>
+            <span class="hidden md:inline font-medium">Stats</span>
+        </a>
+
+        <div class="badge badge-primary badge-outline font-mono text-xs cursor-help border-primary/50" id="version-badge" title="Current Version">
+            ...
+        </div>
+    </div>
+</header>
+
+<main class="flex-1 container mx-auto px-4 py-8 max-w-7xl">
+    {{ if eq .Page "index" }}
+    {{ template "index" . }}
+    {{ else if eq .Page "download" }}
+    {{ template "download" . }}
+    {{ else if eq .Page "repair" }}
+    {{ template "repair" . }}
+    {{ else if eq .Page "stats" }}
+    {{ template "stats" . }}
+    {{ else if eq .Page "config" }}
+    {{ template "config" . }}
+    {{ else if eq .Page "login" }}
+    {{ template "login" . }}
+    {{ else if eq .Page "register" }}
+    {{ template "register" . }}
+    {{ else }}
+    <div class="hero min-h-[60vh]">
+        <div class="hero-content text-center">
+            <div class="max-w-md">
+                <h1 class="text-6xl font-bold text-error/20 mb-4"><i class="bi bi-emoji-frown"></i></h1>
+                <h2 class="text-4xl font-bold text-base-content mb-4">404</h2>
+                <p class="py-6 text-base-content/70">The page you're looking for has drifted into the void.</p>
+                <a href="{{.URLBase}}" class="btn btn-primary shadow-glow shadow-primary/30 rounded-full px-8">Return Home</a>
+            </div>
+        </div>
+    </div>
+    {{ end }}
+</main>
+
+<footer class="footer footer-center p-6 bg-base-100/50 text-base-content/60 border-t border-base-300/50 mt-auto backdrop-blur-sm">
+    <aside class="flex flex-wrap justify-center gap-6">
+        <a href="https://github.com/kyberdot/decypharr" target="_blank" class="flex items-center gap-2 hover:text-primary transition-colors">
+            <i class="bi bi-github text-lg leading-none"></i>
+            <span class="font-medium">Developed By KyberBOX©</span>
+        </a>
+        <a href="https://kyberdot.github.io/decypharr" target="_blank" class="flex items-center gap-2 hover:text-primary transition-colors">
+            <i class="bi bi-book text-lg leading-none"></i>
+            <span class="font-medium">Documentation</span>
+        </a>
+    </aside>
+</footer>
+
+<script src="{{.URLBase}}assets/js/jquery-3.7.1.min.js"></script>
+<script src="{{.URLBase}}assets/js/common.js"></script>
+
+{{ if eq .Page "index" }}
+<script src="{{.URLBase}}assets/js/dashboard.js"></script>
+{{ else if eq .Page "download" }}
+<script src="{{.URLBase}}assets/js/download.js"></script>
+{{ else if eq .Page "repair" }}
+<script src="{{.URLBase}}assets/js/repair.js"></script>
+{{ else if eq .Page "config" }}
+<script src="{{.URLBase}}assets/js/config.js"></script>
+{{ end }}
+</body>
+</html>
+{{ end }}

@@ -1,0 +1,104 @@
+{{ define "register" }}
+<div class="flex min-h-[80vh] items-center justify-center">
+    <div class="card w-full max-w-md bg-base-100/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-base-300/50 relative overflow-hidden">
+        <div class="absolute top-0 w-full h-1 bg-[linear-gradient(90deg,#C41200,#FF6600,#FFD000)]"></div>
+        <div class="card-body p-8">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="bi bi-shield-lock text-3xl text-primary"></i>
+                </div>
+                <h2 class="text-2xl font-bold">First Time Setup</h2>
+                <p class="text-sm text-base-content/60 mt-1">Create your administrator account</p>
+            </div>
+            <form id="authForm" class="space-y-4">
+                <div class="form-control">
+                    <label class="label" for="username">
+                        <span class="label-text font-medium text-base-content/80">Username</span>
+                    </label>
+                    <input type="text" class="input input-bordered bg-base-200/50 focus:bg-base-100 rounded-xl w-full" id="username" name="username" required>
+                </div>
+                <div class="form-control">
+                    <label class="label" for="password">
+                        <span class="label-text font-medium text-base-content/80">Password</span>
+                    </label>
+                    <input type="password" class="input input-bordered bg-base-200/50 focus:bg-base-100 rounded-xl w-full" id="password" name="password" required>
+                </div>
+                <div class="form-control">
+                    <label class="label" for="confirmPassword">
+                        <span class="label-text font-medium text-base-content/80">Confirm Password</span>
+                    </label>
+                    <input type="password" class="input input-bordered bg-base-200/50 focus:bg-base-100 rounded-xl w-full" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <div class="form-control mt-8 space-y-3">
+                    <button type="submit" class="btn btn-primary w-full rounded-xl shadow-glow shadow-primary/30">
+                        <i class="bi bi-check-lg mr-2"></i>Save Account
+                    </button>
+                    <div class="divider text-xs text-base-content/40">OR</div>
+                    <button type="button" id="skipAuthBtn" class="btn btn-ghost w-full rounded-xl hover:bg-base-200 text-base-content/70">
+                        Skip Authentication
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const authForm = document.getElementById('authForm');
+        const skipAuthBtn = document.getElementById('skipAuthBtn');
+
+        authForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Validate passwords match
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                alert('Passwords do not match!');
+                return;
+            }
+
+            // Collect form data
+            let formData = new FormData();
+            formData.append('username', document.getElementById('username').value);
+            formData.append('password', password);
+            formData.append('confirmPassword', confirmPassword);
+            await fetcher('/register', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(errorText => {
+                            // Throw an error with the response text
+                            window.decypharrUtils.createToast(errorText || 'Registration failed', 'error');
+                        });
+                    } else {
+                        window.location.href = window.decypharrUtils.joinURL(window.urlBase, '/');
+                    }
+
+                })
+                .catch(error => {
+                    alert('Registration failed: ' + error.message);
+                });
+        });
+
+        // Handle skip auth button
+        skipAuthBtn.addEventListener('click', function() {
+            window.decypharrUtils.fetcher('/skip-auth', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = window.decypharrUtils.joinURL(window.urlBase, '/');
+                    } else {
+                        throw new Error('Failed to skip authentication');
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+        });
+    });
+</script>
+{{ end }}

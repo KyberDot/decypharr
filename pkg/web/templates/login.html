@@ -1,0 +1,72 @@
+{{ define "login" }}
+<div class="flex min-h-[80vh] items-center justify-center">
+    <div class="card w-full max-w-sm bg-base-100/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-base-300/50 relative overflow-hidden">
+        <div class="absolute top-0 w-full h-1 bg-[linear-gradient(90deg,#C41200,#FF6600,#FFD000)]"></div>
+        <div class="card-body p-8">
+            <div class="text-center mb-8">
+                <img src="{{.URLBase}}images/logo.svg" alt="Logo" class="w-16 h-16 mx-auto mb-4 drop-shadow-lg">
+                <h2 class="text-2xl font-bold">Welcome Back</h2>
+                <p class="text-sm text-base-content/60 mt-1">Sign in to Decypharr</p>
+            </div>
+            <form id="loginForm" class="space-y-5">
+                <div class="form-control">
+                    <label class="label" for="username">
+                        <span class="label-text font-medium text-base-content/80">Username</span>
+                    </label>
+                    <input type="text" class="input input-bordered bg-base-200/50 focus:bg-base-100 rounded-xl w-full" id="username" name="username" required>
+                </div>
+                <div class="form-control">
+                    <label class="label" for="password">
+                        <span class="label-text font-medium text-base-content/80">Password</span>
+                    </label>
+                    <input type="password" class="input input-bordered bg-base-200/50 focus:bg-base-100 rounded-xl w-full" id="password" name="password" required>
+                </div>
+                <div class="form-control mt-8">
+                    <button type="submit" class="btn btn-primary w-full rounded-xl shadow-glow shadow-primary/30">
+                        <i class="bi bi-box-arrow-in-right mr-2 text-lg"></i>Login
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        let loginBtn = document.querySelector('#loginForm button[type="submit"]');
+
+        const formData = {
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+        };
+
+        try {
+            const response = await window.decypharrUtils.fetcher('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                window.decypharrUtils.createToast('Login successful! Redirecting...', 'success');
+
+                // Redirect after a short delay
+                setTimeout(() => {
+                    window.location.href = window.urlBase || '/';
+                }, 1000);
+            } else {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Invalid credentials');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            window.decypharrUtils.createToast(error.message || 'Login failed. Please try again.', 'error');
+        } finally {
+            window.decypharrUtils.setButtonLoading(loginBtn, false);
+        }
+    });
+</script>
+{{ end }}

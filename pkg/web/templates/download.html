@@ -1,0 +1,146 @@
+{{ define "download" }}
+<div class="space-y-6">
+    {{ if .NeedSetup }}
+    <div role="alert" class="alert alert-warning shadow-lg border-warning/20 bg-warning/10 text-warning-content rounded-xl">
+        <i class="bi bi-exclamation-triangle-fill text-xl"></i>
+        <div>
+            <h3 class="font-bold">Configuration Required</h3>
+            <div class="text-sm opacity-80">Your configuration is incomplete. Please complete the setup in the <a
+                    href="{{.URLBase}}settings" class="link hover:text-warning font-semibold">Settings page</a>.
+            </div>
+        </div>
+    </div>
+    {{ end }}
+
+    <div class="card bg-base-100 rounded-2xl shadow-sm border border-base-300/50">
+        <div class="card-body p-6">
+            <h2 class="card-title text-xl mb-4 border-b border-base-300/30 pb-3">
+                <i class="bi bi-cloud-arrow-down mr-2 text-primary"></i>Add Download
+            </h2>
+            
+            <form id="downloadForm" enctype="multipart/form-data" class="space-y-8">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <div class="form-control flex-1 bg-base-200/30 p-4 rounded-2xl border border-base-300/50">
+                        <label class="label" for="magnetURI">
+                            <span class="label-text font-bold text-base">
+                                <i class="bi bi-link-45deg mr-1 text-primary text-lg"></i>Magnet Links
+                            </span>
+                        </label>
+                        <textarea class="textarea textarea-bordered h-40 font-mono text-sm bg-base-100 rounded-xl mt-1 focus:bg-base-100/80"
+                                  id="magnetURI"
+                                  name="urls"
+                                  placeholder="magnet:?xt=urn:btih:...\n\nPaste multiple links, one per line..."></textarea>
+                    </div>
+
+                    <div class="form-control flex-1 bg-base-200/30 p-4 rounded-2xl border border-base-300/50 flex flex-col">
+                        <label class="label">
+                            <span class="label-text font-bold text-base">
+                                <i class="bi bi-file-earmark-arrow-up mr-1 text-secondary text-lg"></i>Upload Files
+                            </span>
+                        </label>
+                        <div class="flex-1 flex flex-col justify-center">
+                            <input type="file"
+                                   class="file-input file-input-bordered file-input-primary w-full bg-base-100 rounded-xl"
+                                   id="torrentFiles"
+                                   name="torrents"
+                                   multiple
+                                   accept=".torrent">
+                            <div class="label mt-2">
+                                <span class="label-text-alt text-base-content/60">
+                                    <i class="bi bi-info-circle mr-1"></i>Select multiple .torrent files to upload
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-base-200/30 p-5 rounded-2xl border border-base-300/50">
+                    <h3 class="font-bold text-sm uppercase tracking-wider text-base-content/60 mb-5">Download Settings</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div class="form-control">
+                            <label class="label" for="downloadAction">
+                                <span class="label-text font-medium text-base-content/80">Post Download Action</span>
+                            </label>
+                            <select class="select select-bordered bg-base-100 rounded-xl focus:bg-base-100" id="downloadAction" name="downloadAction">
+                                <option value="symlink" selected>Create Symlink</option>
+                                <option value="download">Download Files</option>
+                                <option value="none">No Action</option>
+                            </select>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label" for="downloadFolder">
+                                <span class="label-text font-medium text-base-content/80">Download Folder</span>
+                            </label>
+                            <input type="text"
+                                   class="input input-bordered bg-base-100 rounded-xl focus:bg-base-100 font-mono text-sm"
+                                   id="downloadFolder"
+                                   name="downloadFolder"
+                                   placeholder="/downloads/torrents">
+                            <div class="label pb-0">
+                                <span class="label-text-alt text-base-content/50">Leave empty for qBit default</span>
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label" for="arr">
+                                <span class="label-text font-medium text-base-content/80">Arr Category</span>
+                            </label>
+                            <input type="text"
+                                   class="input input-bordered bg-base-100 rounded-xl focus:bg-base-100 font-mono text-sm"
+                                   id="arr"
+                                   name="arr"
+                                   placeholder="sonarr, radarr, etc.">
+                        </div>
+
+                        {{ if .HasMultiDebrid }}
+                        <div class="form-control">
+                            <label class="label" for="debrid">
+                                <span class="label-text font-medium text-base-content/80">Debrid Service</span>
+                            </label>
+                            <select class="select select-bordered bg-base-100 rounded-xl focus:bg-base-100" id="debrid" name="debrid">
+                                {{ range $index, $debrid := .Debrids }}
+                                <option value="{{ $debrid }}" {{ if eq $index 0 }}selected{{end}}>
+                                    {{ $debrid }}
+                                </option>
+                                {{ end }}
+                            </select>
+                        </div>
+                        {{ end }}
+
+                        <div class="form-control lg:col-span-full mt-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <label class="label cursor-pointer justify-start gap-3 p-3 bg-base-100 border border-base-300/50 rounded-xl hover:border-primary/30 transition-colors">
+                                    <input type="checkbox" class="checkbox checkbox-sm checkbox-primary rounded" name="downloadUncached" id="downloadUncached">
+                                    <span class="label-text font-medium text-sm">Download Uncached</span>
+                                </label>
+                                <label class="label cursor-pointer justify-start gap-3 p-3 bg-base-100 border border-base-300/50 rounded-xl hover:border-primary/30 transition-colors">
+                                    <input type="checkbox" class="checkbox checkbox-sm checkbox-primary rounded" name="skipMultiSeason" id="skipMultiSeason">
+                                    <span class="label-text font-medium text-sm">Skip Multi-Season Check</span>
+                                </label>
+                                <label class="label cursor-pointer justify-start gap-3 p-3 bg-base-100 border border-base-300/50 rounded-xl hover:border-primary/30 transition-colors">
+                                    <input type="checkbox" class="checkbox checkbox-sm checkbox-primary rounded" name="rmTrackerUrls" id="rmTrackerUrls" {{ if .AlwaysRmTrackerUrls }}checked disabled{{ end }}>
+                                    <span class="label-text font-medium text-sm">Remove Trackers</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-control pt-2">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-xl shadow-glow shadow-primary/30 w-full sm:w-auto self-end px-8" id="submitDownload">
+                        <i class="bi bi-cloud-upload mr-2"></i>Add to Download Queue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let downloadFolder = "{{ .DownloadFolder }}" || '';
+        window.downloadManager = new DownloadManager(downloadFolder);
+    });
+</script>
+{{ end }}

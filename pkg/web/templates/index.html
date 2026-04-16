@@ -1,0 +1,130 @@
+{{ define "index" }}
+<div class="space-y-6">
+
+    {{ if .NeedSetup }}
+    <div role="alert" class="alert alert-warning shadow-lg border-warning/20 bg-warning/10 text-warning-content rounded-xl">
+        <i class="bi bi-exclamation-triangle-fill text-xl"></i>
+        <div>
+            <h3 class="font-bold">Configuration Required</h3>
+            <div class="text-sm opacity-80">Your configuration is incomplete. Please complete the setup in the <a href="{{.URLBase}}settings" class="link hover:text-warning font-semibold">Settings page</a>.</div>
+        </div>
+    </div>
+    {{ end }}
+
+    <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300/50 p-4">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <button class="btn btn-outline btn-error btn-sm hidden rounded-lg" id="batchDeleteBtn">
+                    <i class="bi bi-trash"></i>
+                    <span class="hidden sm:inline">Delete Selected</span>
+                </button>
+                <button class="btn btn-outline btn-warning btn-sm hidden rounded-lg" id="batchDeleteDebridBtn">
+                    <i class="bi bi-cloud-fog-fill"></i>
+                    <span class="hidden sm:inline">Remove From Debrid</span>
+                </button>
+                <button class="btn btn-ghost btn-sm rounded-lg bg-base-200 hover:bg-base-300" id="refreshBtn">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    <span class="hidden sm:inline">Refresh</span>
+                </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto bg-base-200/50 p-1.5 rounded-xl border border-base-300/30">
+                <select class="select select-ghost select-sm w-full sm:w-auto focus:bg-base-100 rounded-lg font-medium" id="stateFilter">
+                    <option value="">All States</option>
+                    <option value="pausedUP">Completed</option>
+                    <option value="downloading">Downloading</option>
+                    <option value="error">Error</option>
+                </select>
+                <div class="w-px h-6 bg-base-300 hidden sm:block"></div>
+                <select class="select select-ghost select-sm w-full sm:w-auto focus:bg-base-100 rounded-lg font-medium" id="categoryFilter">
+                    <option value="">All Categories</option>
+                </select>
+                <div class="w-px h-6 bg-base-300 hidden sm:block"></div>
+                <select class="select select-ghost select-sm w-full sm:w-auto focus:bg-base-100 rounded-lg font-medium" id="sortSelector">
+                    <option value="added_on" selected>Newest First</option>
+                    <option value="added_on_asc">Oldest First</option>
+                    <option value="name_asc">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                    <option value="size_desc">Largest Size</option>
+                    <option value="size_asc">Smallest Size</option>
+                    <option value="progress_desc">Highest Progress</option>
+                    <option value="progress_asc">Lowest Progress</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 rounded-2xl shadow-sm border border-base-300/50 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="table table-hover w-full text-sm">
+                <thead class="bg-base-200/50 text-xs uppercase tracking-wider text-base-content/60 border-b border-base-300/50">
+                <tr>
+                    <th class="w-12 px-4 py-4">
+                        <label class="cursor-pointer">
+                            <input type="checkbox" class="checkbox checkbox-sm checkbox-primary rounded" id="selectAll">
+                        </label>
+                    </th>
+                    <th class="font-semibold py-4"><i class="bi bi-file-text mr-1.5"></i>Name</th>
+                    <th class="font-semibold py-4"><i class="bi bi-hdd mr-1.5"></i>Size</th>
+                    <th class="font-semibold py-4"><i class="bi bi-speedometer2 mr-1.5"></i>Progress</th>
+                    <th class="font-semibold py-4"><i class="bi bi-download mr-1.5"></i>Speed</th>
+                    <th class="font-semibold py-4"><i class="bi bi-tag mr-1.5"></i>Category</th>
+                    <th class="font-semibold py-4"><i class="bi bi-cloud mr-1.5"></i>Debrid</th>
+                    <th class="font-semibold py-4"><i class="bi bi-people mr-1.5"></i>Seeders</th>
+                    <th class="font-semibold py-4"><i class="bi bi-activity mr-1.5"></i>State</th>
+                    <th class="font-semibold py-4 w-24 text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="torrentsList" class="divide-y divide-base-200">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-between items-center p-4 bg-base-100 gap-4">
+            <div class="text-sm font-medium text-base-content/60">
+                <span id="paginationInfo">Loading torrents...</span>
+            </div>
+            <div class="join shadow-sm rounded-lg" id="paginationControls"></div>
+        </div>
+    </div>
+
+    <div class="bg-base-100/50 rounded-2xl border-2 border-dashed border-base-300 hidden p-12" id="emptyState">
+        <div class="flex flex-col items-center text-center max-w-sm mx-auto">
+            <div class="w-20 h-20 bg-base-200 rounded-full flex items-center justify-center text-4xl text-base-content/30 mb-6 shadow-inner">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2 text-base-content">No Torrents Found</h3>
+            <p class="text-base-content/60 mb-8 text-sm">Your dashboard is looking a bit empty. Start by adding a magnet link or uploading a torrent file.</p>
+            <a href="{{.URLBase}}download" class="btn btn-primary rounded-full px-8 shadow-glow shadow-primary/30">
+                <i class="bi bi-plus-lg mr-2"></i>Add Download
+            </a>
+        </div>
+    </div>
+</div>
+
+<ul class="menu bg-base-100/95 backdrop-blur-xl shadow-2xl rounded-xl context-menu hidden fixed z-50 border border-base-300/50 min-w-[200px] p-2" id="torrentContextMenu">
+    <li class="menu-title px-3 py-2 text-xs font-semibold uppercase tracking-wider text-base-content/50">
+        <span class="torrent-name truncate block w-full"></span>
+    </li>
+    <div class="divider my-0 h-px"></div>
+    <li><a class="menu-item py-2.5 rounded-lg hover:bg-base-200 transition-colors" data-action="copy-magnet">
+        <i class="bi bi-link-45deg text-primary text-lg"></i>
+        <span class="font-medium">Copy Magnet</span>
+    </a></li>
+    <li><a class="menu-item py-2.5 rounded-lg hover:bg-base-200 transition-colors" data-action="copy-name">
+        <i class="bi bi-clipboard text-info text-lg"></i>
+        <span class="font-medium">Copy Name</span>
+    </a></li>
+    <div class="divider my-1 h-px"></div>
+    <li><a class="menu-item py-2.5 rounded-lg text-error hover:bg-error/10 hover:text-error transition-colors" data-action="delete">
+        <i class="bi bi-trash3 text-lg"></i>
+        <span class="font-medium">Delete Torrent</span>
+    </a></li>
+</ul>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        window.dashboard = new TorrentDashboard();
+    });
+</script>
+{{ end }}

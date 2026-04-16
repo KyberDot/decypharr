@@ -1,0 +1,454 @@
+{{ define "stats" }}
+<div class="container mx-auto space-y-6">
+    <div class="flex items-center justify-between bg-base-100 rounded-2xl shadow-sm border border-base-300/50 p-4 px-6">
+        <h1 class="text-2xl font-bold flex items-center">
+            <i class="bi bi-graph-up mr-3 text-primary"></i>System Statistics
+        </h1>
+        <button id="refresh-stats" class="btn btn-ghost bg-base-200 hover:bg-base-300 btn-sm rounded-lg">
+            <i class="bi bi-arrow-clockwise mr-1"></i>Refresh
+        </button>
+    </div>
+
+    <div id="loading-stats" class="card bg-base-100 rounded-2xl border border-base-300/50 py-16 text-center">
+        <div class="loading loading-spinner loading-lg text-primary"></div>
+        <p class="mt-4 text-base-content/60 font-medium">Gathering telemetry...</p>
+    </div>
+
+    <div id="stats-content" class="space-y-6" style="display: none;">
+        <div class="card bg-base-100 rounded-2xl shadow-sm border border-base-300/50 overflow-hidden">
+            <div class="p-5 border-b border-base-300/50 bg-base-200/30">
+                <h2 class="font-bold text-lg flex items-center">
+                    <i class="bi bi-cpu text-info mr-2"></i>System Overview
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30 place-items-center sm:place-items-start">
+                        <div class="stat-figure text-info hidden sm:block">
+                            <div class="w-12 h-12 bg-info/10 rounded-xl flex items-center justify-center">
+                                <i class="bi bi-memory text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="stat-title text-base-content/60 text-xs uppercase tracking-wider font-semibold">Memory Used</div>
+                        <div class="stat-value text-info text-2xl mt-1" id="memory-used">-</div>
+                        <div class="stat-desc font-mono mt-1 opacity-70" id="heap-alloc">Heap: -</div>
+                    </div>
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30 place-items-center sm:place-items-start">
+                        <div class="stat-figure text-success hidden sm:block">
+                            <div class="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center">
+                                <i class="bi bi-diagram-3 text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="stat-title text-base-content/60 text-xs uppercase tracking-wider font-semibold">Goroutines</div>
+                        <div class="stat-value text-success text-2xl mt-1" id="goroutines">-</div>
+                        <div class="stat-desc font-mono mt-1 opacity-70" id="gc-cycles">GC: - cycles</div>
+                    </div>
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30 place-items-center sm:place-items-start">
+                        <div class="stat-figure text-warning hidden sm:block">
+                            <div class="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center">
+                                <i class="bi bi-cpu text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="stat-title text-base-content/60 text-xs uppercase tracking-wider font-semibold">CPU Cores</div>
+                        <div class="stat-value text-warning text-2xl mt-1" id="num-cpu">-</div>
+                        <div class="stat-desc font-mono mt-1 opacity-70" id="arch">-</div>
+                    </div>
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30 place-items-center sm:place-items-start">
+                        <div class="stat-figure text-accent hidden sm:block">
+                            <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center">
+                                <i class="bi bi-info-circle text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="stat-title text-base-content/60 text-xs uppercase tracking-wider font-semibold">System</div>
+                        <div class="stat-value text-accent text-2xl mt-1" id="os">-</div>
+                        <div class="stat-desc font-mono mt-1 opacity-70" id="go-version">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 rounded-2xl shadow-sm border border-base-300/50 overflow-hidden" id="debrid-card">
+            <div class="p-5 border-b border-base-300/50 bg-base-200/30">
+                <h2 class="font-bold text-lg flex items-center">
+                    <i class="bi bi-cloud-download text-secondary mr-2"></i>Debrid Services
+                </h2>
+            </div>
+            <div class="p-6" id="debrid-content">
+            </div>
+        </div>
+
+        <div class="card bg-base-100 rounded-2xl shadow-sm border border-base-300/50 overflow-hidden" id="rclone-card">
+            <div class="p-5 border-b border-base-300/50 bg-base-200/30 flex justify-between items-center">
+                <h2 class="font-bold text-lg flex items-center">
+                    <i class="bi bi-hdd-stack text-primary mr-2"></i>Rclone Statistics
+                </h2>
+                <div class="flex items-center gap-3">
+                    <div class="badge badge-sm font-medium" id="rclone-status">Unknown</div>
+                    <a href="{{.URLBase}}debug/logs/rclone" class="btn btn-xs btn-outline rounded-lg" target="_blank">
+                        <i class="bi bi-journal-text mr-1"></i>Logs
+                    </a>
+                </div>
+            </div>
+            <div class="p-6" id="rclone-content">
+            </div>
+        </div>
+    </div>
+
+    <div id="error-stats" class="alert alert-error shadow-sm rounded-xl border-error/20 bg-error/10 text-error-content" style="display: none;">
+        <i class="bi bi-exclamation-triangle-fill text-xl"></i>
+        <div class="flex-1">
+            <h3 class="font-bold">Error</h3>
+            <div class="text-sm opacity-90" id="error-message">Failed to load statistics</div>
+        </div>
+        <button id="retry-stats" class="btn btn-sm btn-ghost bg-error/20 hover:bg-error/30 text-error-content rounded-lg">
+            <i class="bi bi-arrow-clockwise"></i>
+            Retry
+        </button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadingEl = document.getElementById('loading-stats');
+        const contentEl = document.getElementById('stats-content');
+        const errorEl = document.getElementById('error-stats');
+        const refreshBtn = document.getElementById('refresh-stats');
+        const retryBtn = document.getElementById('retry-stats');
+
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function showError(message) {
+            loadingEl.style.display = 'none';
+            contentEl.style.display = 'none';
+            errorEl.style.display = 'flex';
+            document.getElementById('error-message').textContent = message;
+        }
+
+        function showContent() {
+            loadingEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            contentEl.style.display = 'block';
+        }
+
+        function showLoading() {
+            contentEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            loadingEl.style.display = 'block';
+        }
+
+        function updateRcloneStats(rclone) {
+            const rcloneCard = document.getElementById('rclone-card');
+            const rcloneStatus = document.getElementById('rclone-status');
+            const rcloneContent = document.getElementById('rclone-content');
+
+            if (!rclone || !rclone.enabled) {
+                rcloneStatus.textContent = 'Disabled';
+                rcloneStatus.className = 'badge badge-error badge-sm';
+                rcloneContent.innerHTML = '<p class="text-base-content/60 text-center py-4">Rclone is not enabled or configured.</p>';
+                return;
+            }
+
+            if (!rclone.server_ready) {
+                rcloneStatus.textContent = 'Not Ready';
+                rcloneStatus.className = 'badge badge-warning badge-sm';
+                rcloneContent.innerHTML = '<p class="text-base-content/60 text-center py-4">Rclone server is not ready.</p>';
+                return;
+            }
+
+            rcloneStatus.textContent = 'Active';
+            rcloneStatus.className = 'badge badge-success badge-sm';
+
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+
+            // Version info
+            if (rclone.version) {
+                html += `
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30">
+                        <div class="stat-title text-xs uppercase font-semibold">Version</div>
+                        <div class="stat-value text-lg mt-1">${rclone.version.version || 'Unknown'}</div>
+                        <div class="stat-desc mt-1 opacity-70">${rclone.version.arch || ''} ${rclone.version.os || ''}</div>
+                    </div>
+                `;
+            }
+
+            // Core stats
+            if (rclone.core) {
+                const cs = rclone.core;
+                html += `
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30">
+                        <div class="stat-title text-xs uppercase font-semibold">Transferred</div>
+                        <div class="stat-value text-primary text-lg mt-1">${window.decypharrUtils.formatBytes(cs.bytes || 0)}</div>
+                        <div class="stat-desc mt-1 opacity-70">Speed: ${window.decypharrUtils.formatBytes(cs.speed || 0)}/s</div>
+                    </div>
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30">
+                        <div class="stat-title text-xs uppercase font-semibold">Transfers</div>
+                        <div class="stat-value text-info text-lg mt-1">${cs.transfers || 0}</div>
+                        <div class="stat-desc mt-1 opacity-70">Errors: ${cs.errors || 0}</div>
+                    </div>
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30">
+                        <div class="stat-title text-xs uppercase font-semibold">Checks</div>
+                        <div class="stat-value text-secondary text-lg mt-1">${cs.checks || 0}</div>
+                        <div class="stat-desc mt-1 opacity-70">Total: ${cs.totalChecks || 0}</div>
+                    </div>
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30">
+                        <div class="stat-title text-xs uppercase font-semibold">Uptime</div>
+                        <div class="stat-value text-accent text-lg mt-1">${window.decypharrUtils.formatDuration(cs.elapsedTime)}</div>
+                        <div class="stat-desc mt-1 opacity-70">Transfer: ${window.decypharrUtils.formatDuration(cs.transferTime)}</div>
+                    </div>
+                `;
+            }
+
+            if (rclone.memory) {
+                const ms = rclone.memory;
+                html += `
+                    <div class="stat p-4 bg-base-200/50 rounded-xl border border-base-300/30">
+                        <div class="stat-title text-xs uppercase font-semibold">Memory</div>
+                        <div class="stat-value text-accent text-lg mt-1">${window.decypharrUtils.formatBytes(ms.Sys || 0)}</div>
+                        <div class="stat-desc mt-1 opacity-70">Heap: ${window.decypharrUtils.formatBytes(ms.TotalAlloc || 0)}</div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+
+            // Active transfers
+            if (rclone.core && rclone.core.transferring && rclone.core.transferring.length > 0) {
+                let transferring = rclone.core.transferring;
+                html += `
+                    <div class="mt-8">
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-base-content/60 mb-3 flex items-center">
+                            <i class="bi bi-arrow-down-up mr-2"></i>
+                            Active Transfers (${transferring.length})
+                        </h3>
+                        <div class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                `;
+
+                transferring.forEach(transfer => {
+                    const progress = ((transfer.bytes || 0) / (transfer.size || 1)) * 100;
+                    html += `
+                        <div class="bg-base-200/30 rounded-xl border border-base-300/50 p-4">
+                            <div class="flex justify-between items-start mb-3">
+                                <h4 class="font-medium text-sm truncate flex-1 mr-4">${transfer.name || 'Unknown'}</h4>
+                                <span class="text-xs font-mono bg-base-300 px-2 py-1 rounded-md">${window.decypharrUtils.formatBytes(transfer.speed || 0)}/s</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <progress class="progress progress-primary flex-1 h-2" value="${progress}" max="100"></progress>
+                                <span class="text-xs font-mono w-12 text-right">${progress.toFixed(1)}%</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-base-content/50 mt-2 font-mono">
+                                <span>${window.decypharrUtils.formatBytes(transfer.bytes || 0)} / ${window.decypharrUtils.formatBytes(transfer.size || 0)}</span>
+                                <span>ETA: ${transfer.eta ? window.decypharrUtils.formatDuration(transfer.eta) : 'Unknown'}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div></div>';
+            }
+
+            // Mount information
+            if (rclone.mounts && Object.keys(rclone.mounts).length > 0) {
+                html += `
+                    <div class="mt-8">
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-base-content/60 mb-3 flex items-center">
+                            <i class="bi bi-hdd-network mr-2"></i>
+                            Mounted Services
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                `;
+                
+                Object.entries(rclone.mounts).forEach(([name, mount]) => {
+                    const statusBadge = mount.mounted ? 
+                        '<span class="badge badge-success badge-sm font-medium">Mounted</span>' : 
+                        '<span class="badge badge-error badge-sm font-medium">Not Mounted</span>';
+                    
+                    html += `
+                        <div class="bg-base-200/30 rounded-xl border border-base-300/50 p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-semibold text-base">${mount.config_name || name}</h4>
+                                    <p class="text-xs text-base-content/60 mt-0.5">${mount.provider || 'Unknown Provider'}</p>
+                                    ${mount.local_path ? `<p class="text-xs text-base-content/50 font-mono mt-2 bg-base-300/50 px-2 py-1 rounded inline-block">${mount.local_path}</p>` : ''}
+                                </div>
+                                <div class="text-right flex flex-col items-end gap-1.5">
+                                    ${statusBadge}
+                                    ${mount.mounted_at ? `<p class="text-[10px] text-base-content/40 uppercase tracking-wide">Since ${new Date(mount.mounted_at).toLocaleTimeString()}</p>` : ''}
+                                </div>
+                            </div>
+                            ${mount.error ? `<div class="mt-3 text-xs bg-error/10 text-error p-2 rounded-lg border border-error/20 font-mono">${mount.error}</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                html += '</div></div>';
+            }
+
+            // Bandwidth stats
+            if (rclone.bandwidth && rclone.bandwidth.rate !== "off") {
+                html += `
+                    <div class="mt-8">
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-base-content/60 mb-3 flex items-center">
+                            <i class="bi bi-speedometer2 mr-2"></i>
+                            Bandwidth Limits
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-3 bg-base-200/50 rounded-xl border border-base-300/30 flex justify-between items-center">
+                                <span class="text-xs uppercase font-semibold text-base-content/70">Bytes / Sec</span>
+                                <span class="text-sm font-mono font-medium">${window.decypharrUtils.formatBytes(rclone.bandwidth.bytesPerSecond)}</span>
+                            </div>
+                            <div class="p-3 bg-base-200/50 rounded-xl border border-base-300/30 flex justify-between items-center">
+                                <span class="text-xs uppercase font-semibold text-base-content/70">Rate Limit</span>
+                                <span class="text-sm font-mono font-medium">${window.decypharrUtils.formatBytes(rclone.bandwidth.rate)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            rcloneContent.innerHTML = html;
+        }
+
+        function updateDebridStats(debrids) {
+            const debridContent = document.getElementById('debrid-content');
+
+            if (!debrids || debrids.length === 0) {
+                debridContent.innerHTML = '<p class="text-base-content/60 text-center py-4">No debrid services configured.</p>';
+                return;
+            }
+
+            let html = '<div class="space-y-6">';
+            debrids.forEach(debrid => {
+                const profile = debrid.profile || {};
+                const library = debrid.library || {};
+                const accounts = debrid.accounts || [];
+                
+                html += `
+                    <div class="bg-base-200/30 rounded-2xl border border-base-300/50 p-5">
+                        <div class="flex justify-between items-start border-b border-base-300/30 pb-4 mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg">${profile.name || 'Unknown Service'}</h3>
+                                <p class="text-sm text-base-content/60 mt-0.5">${profile.username || 'No username'}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="badge badge-primary badge-outline font-mono text-xs mb-1">${formatNumber(profile.points || 0)} pts</div>
+                                <div class="text-[10px] text-base-content/50 uppercase tracking-wide">Type: ${profile.type || 'Unknown'}</div>
+                                <div class="text-[10px] text-base-content/50 uppercase tracking-wide">Expires: ${profile.expiration ? new Date(profile.expiration).toLocaleDateString() : 'Unknown'}</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-base-100 rounded-xl border border-base-300/30 p-3 text-center">
+                                <div class="text-[10px] uppercase font-semibold text-base-content/50 tracking-wider mb-1">Library</div>
+                                <div class="text-lg font-medium">${formatNumber(library.total || 0)}</div>
+                            </div>
+                            <div class="bg-base-100 rounded-xl border border-base-300/30 p-3 text-center">
+                                <div class="text-[10px] uppercase font-semibold text-base-content/50 tracking-wider mb-1">Bad Torrents</div>
+                                <div class="text-lg font-medium text-error">${formatNumber(library.bad || 0)}</div>
+                            </div>
+                            <div class="bg-base-100 rounded-xl border border-base-300/30 p-3 text-center">
+                                <div class="text-[10px] uppercase font-semibold text-base-content/50 tracking-wider mb-1">Active Links</div>
+                                <div class="text-lg font-medium text-success">${formatNumber(library.active_links || 0)}</div>
+                            </div>
+                            <div class="bg-base-100 rounded-xl border border-base-300/30 p-3 text-center">
+                                <div class="text-[10px] uppercase font-semibold text-base-content/50 tracking-wider mb-1">Accounts</div>
+                                <div class="text-lg font-medium text-info">${accounts.length}</div>
+                            </div>
+                        </div>
+                `;
+                
+                if (accounts && accounts.length > 0) {
+                    html += `
+                        <div class="mt-6 pt-4 border-t border-base-300/30">
+                            <h4 class="text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-3 flex items-center">
+                                <i class="bi bi-person-lines-fill mr-2"></i>Accounts Sub-System
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    `;
+                    
+                    accounts.forEach((account, index) => {
+                        const statusBadge = account.disabled ? 
+                            '<span class="badge badge-error badge-sm">Disabled</span>' : 
+                            '<span class="badge badge-success badge-sm">Active</span>';
+                        const inUseBadge = account.in_use ?
+                            '<span class="badge badge-info badge-sm ml-1">In Use</span>' : '';
+                        
+                        html += `
+                            <div class="bg-base-100 rounded-xl border border-base-300/30 p-4 shadow-sm">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div class="flex-1">
+                                        <div class="flex items-center">
+                                            <h5 class="font-medium text-sm mr-2">Slot #${account.order + 1}</h5>
+                                            ${statusBadge}${inUseBadge}
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mt-1">${account.username || 'No username'}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs font-mono bg-base-200 px-2 py-1 rounded text-base-content/70 border border-base-300/50">
+                                            Token: ${account.token_masked || '****'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 mt-3">
+                                    <div class="bg-base-200/50 rounded-lg p-2 text-center border border-base-300/30">
+                                        <div class="text-[10px] uppercase tracking-wider text-base-content/50 mb-0.5">Traffic</div>
+                                        <div class="text-xs font-mono font-medium">${window.decypharrUtils.formatBytes(account.traffic_used || 0)}</div>
+                                    </div>
+                                    <div class="bg-base-200/50 rounded-lg p-2 text-center border border-base-300/30">
+                                        <div class="text-[10px] uppercase tracking-wider text-base-content/50 mb-0.5">Links</div>
+                                        <div class="text-xs font-mono font-medium">${formatNumber(account.links_count || 0)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div></div>';
+                }
+                
+                html += `</div>`;
+            });
+            html += '</div>';
+            debridContent.innerHTML = html;
+        }
+
+        function updateStats(stats) {
+            document.getElementById('memory-used').textContent = stats.memory_used || '-';
+            document.getElementById('heap-alloc').textContent = `Heap: ${stats.heap_alloc_mb || '-'}`;
+            document.getElementById('goroutines').textContent = formatNumber(stats.goroutines || 0);
+            document.getElementById('gc-cycles').textContent = `GC: ${formatNumber(stats.gc_cycles || 0)} cycles`;
+            document.getElementById('num-cpu').textContent = stats.num_cpu || '-';
+            document.getElementById('arch').textContent = stats.arch || '-';
+            document.getElementById('os').textContent = stats.os || '-';
+            document.getElementById('go-version').textContent = stats.go_version || '-';
+
+            updateRcloneStats(stats.rclone);
+            updateDebridStats(stats.debrids);
+        }
+
+        function loadStats() {
+            showLoading();
+
+            fetch(`${window.urlBase}debug/stats`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(stats => {
+                    updateStats(stats);
+                    showContent();
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                    showError(error.message || 'Failed to load statistics');
+                });
+        }
+
+        refreshBtn.addEventListener('click', loadStats);
+        retryBtn.addEventListener('click', loadStats);
+        setInterval(loadStats, 30000);
+        loadStats();
+    });
+</script>
+{{ end }}
